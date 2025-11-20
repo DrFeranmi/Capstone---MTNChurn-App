@@ -83,7 +83,7 @@ with c8:
 # ========================== Prediction ==========================
 if st.button("Check Churn Risk", type="primary", use_container_width=True):
     
-    # [Same input_dict building code as before — unchanged, just copied]
+    # [Keep your existing input_dict building code here — unchanged]
     input_dict = {col: 0 for col in feature_names}
     raw_tenure = tenure
     raw_monthly = monthly_charges
@@ -125,7 +125,7 @@ if st.button("Check Churn Risk", type="primary", use_container_width=True):
     st.markdown("<br>", unsafe_allow_html=True)
 
     if will_churn:
-        st.error("**YES — This customer is likely to churn**", icon="")
+        st.error("**YES — This customer is likely to churn**")
         st.markdown("""
         ### Recommended Immediate Actions:
         - **Call within 24 hours** with personalized retention offer
@@ -134,7 +134,7 @@ if st.button("Check Churn Risk", type="primary", use_container_width=True):
         - Assign to **High-Value Retention Team**
         """)
     else:
-        st.success("**NO — This customer is safe**", icon="")
+        st.success("**NO — This customer is safe**")
         st.markdown("""
         ### Recommended Actions:
         - Monitor monthly
