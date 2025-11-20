@@ -2,6 +2,7 @@ import streamlit as st
 import joblib
 import pandas as pd
 import numpy as np
+import sys, traceback
 
 # ========================== Page Config ==========================
 st.set_page_config(
@@ -12,14 +13,28 @@ st.set_page_config(
 )
 
 # ========================== Load Model ==========================
-@st.cache_resource
+# ---- load artifacts once (so sidebar can reference THRESHOLD) ----
+@st.cache_data(show_spinner=False)
 def load_artifacts():
-    model = joblib.load("artifacts/best_churn_model_calibrated.pkl")
-    threshold = joblib.load("artifacts/optimal_threshold.pkl")
-    features = joblib.load("artifacts/feature_names.pkl")
-    return model, threshold, features
+    try:
+        model = joblib.load("artifacts/best_churn_model_calibrated.pkl")
+        THRESHOLD = joblib.load("artifacts/optimal_threshold.pkl")
+        feature_names = joblib.load("artifacts/feature_names.pkl")
+    except Exception:
+        print("MODEL LOAD ERROR:", file=sys.stderr)
+        traceback.print_exc()
+        raise
+
+    # minimal sanity logs
+    print("Loaded model type:", type(model))
+    if hasattr(model, "classes_"):
+        print("Model classes:", model.classes_)
+    print("Threshold:", THRESHOLD)
+    print("len(feature_names):", len(feature_names))
+    return model, THRESHOLD, feature_names
 
 model, THRESHOLD, feature_names = load_artifacts()
+
 
 # ========================== Sidebar ==========================
 with st.sidebar:
@@ -71,22 +86,23 @@ with col5:
     gender = st.selectbox("Gender", ["Male", "Female"])
 
 # ========================== Prediction ==========================
-if st.button("🔮 Predict Churn Risk", type="primary", use_container_width=True):
+if st.button("🔮 Predict Churn Risk"):
+    # start from the canonical feature list so nothing is accidentally missing
     input_dict = {col: 0 for col in feature_names}
 
-    # Numeric
-    input_dict['tenure'] = tenure
-    input_dict['MonthlyCharges'] = monthly_charges
-    input_dict['TotalCharges'] = total_charges
+    # numeric features (cast safely)
+    input_dict['tenure'] = int(tenure)
+    input_dict['MonthlyCharges'] = float(monthly_charges)
+    input_dict['TotalCharges'] = float(total_charges)
     input_dict['SeniorCitizen'] = 1 if senior_citizen == "Yes" else 0
 
-    # Main categoricals
+    # categorical one-hot features (must match training names)
     input_dict[f'Contract_{contract}'] = 1
     input_dict[f'PaymentMethod_{payment_method}'] = 1
     input_dict[f'InternetService_{internet_service}'] = 1
-    input_dict[f'gender_{gender}'] = 1  # NEW: Gender one-hot
+    input_dict[f'gender_{gender}'] = 1
 
-    # All Yes/No + special cases (fixed for phone/internet)
+    # iterate and set yes/no/service-specific flags — use the loop variable `feat`
     for feat, val in [
         ('OnlineSecurity', online_security),
         ('OnlineBackup', online_backup),
@@ -102,24 +118,40 @@ if st.button("🔮 Predict Churn Risk", type="primary", use_container_width=True
         if val == "No internet service":
             input_dict[f'{feat}_No internet service'] = 1
         elif val == "No phone service":
-            input_dict[f'{MultipleLines}_No phone service'] = 1  # FIXED: Specific to MultipleLines
+            input_dict[f'{feat}_No phone service'] = 1
         else:
             input_dict[f'{feat}_{val}'] = 1
 
-    # Final DataFrame (enforce order, fill misses)
+    # make DataFrame and ensure exact column order used in training
     input_df = pd.DataFrame([input_dict])
-    input_df = input_df.reindex(columns=feature_names, fill_value=0)
+    input_prepared = input_df.reindex(columns=feature_names, fill_value=0)
 
-    # DEBUG: Peek at input (remove in prod)
+    # debug expander (safe to remove in production)
     with st.expander("Debug: Raw Input Vector (first 10 cols)"):
-        st.write(input_df.iloc[0].head(10))
+        st.write(input_prepared.iloc[0].head(10))
 
-    # Predict
-    prob = model.predict_proba(input_df)[0][1]
+    # prediction (use input_prepared)
+    probas = model.predict_proba(input_prepared)
+    print("predict_proba shape:", getattr(probas, "shape", None))
+    print("predict_proba sample row:", probas[0])
+
+    # robustly determine index for positive class probability
+    if hasattr(model, "classes_"):
+        classes = list(model.classes_)
+        if 1 in classes:
+            pos_idx = classes.index(1)
+        elif 'Yes' in classes:
+            pos_idx = classes.index('Yes')
+        else:
+            pos_idx = len(classes) - 1
+    else:
+        pos_idx = 1
+
+    prob = float(probas[0, pos_idx])
     prediction = "HIGH RISK – WILL CHURN" if prob >= THRESHOLD else "SAFE – WILL STAY"
     color = "red" if prob >= THRESHOLD else "green"
 
-    # Results (your existing display code here...)
+    # display cleaned results
     st.markdown("<br>", unsafe_allow_html=True)
     st.markdown(f"<h1 style='text-align: center; color: {color}; font-size: 52px; font-weight: bold;'>{prob:.1%}</h1>", unsafe_allow_html=True)
     st.markdown(f"<h3 style='text-align: center;'>{prediction}</h3>", unsafe_allow_html=True)
