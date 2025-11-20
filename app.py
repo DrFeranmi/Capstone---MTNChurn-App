@@ -149,18 +149,43 @@ if st.button("Predict Churn Risk", type="primary", use_container_width=True):
     st.markdown(f"<h1 style='text-align: center; color: {color};'>{prob:.1%}</h1>", unsafe_allow_html=True)
     st.markdown(f"<h3 style='text-align: center;'>{risk}</h3>", unsafe_allow_html=True)
 
+    risk_tier = "Low Risk" if prob < 0.3 else "Medium Risk" if prob < 0.6 else "High Risk"
+    confidence = "Very High" if prob < 0.05 or prob > 0.95 else "Moderate"
+
+    
     col1, col2, col3 = st.columns(3)
     with col1:
         st.metric("Churn Probability", f"{prob:.1%}")
     with col2:
-        st.metric("Risk Level", "HIGH" if prob >= THRESHOLD else "LOW")
+        st.metric("Risk Tier", risk_tier)
     with col3:
-        st.metric("Action", "URGENT RETENTION" if prob >= THRESHOLD else "MONITOR")
+        st.metric("Confidence", confidence)
 
     if prob >= THRESHOLD:
-        st.error("⚠️ Immediate retention action recommended: discount, bonus data, contract upgrade, or proactive care call.")
+        st.error(
+            """
+            **🚨 High Churn Risk — Act Now!**
+            
+            Recommended actions:
+            - Offer 20–50% discount on next bill
+            - Bundle free tech support + bonus data
+            - Propose 12-month contract upgrade
+            - Proactive care call within 24 hours
+            """,
+            icon="⚠️"
+        )
     else:
-        st.success("✅ Customer is stable. Consider upselling premium services.")
+        st.success(
+            """
+            **✅ Low Risk — Stable Customer**
+            
+            Opportunities:
+            - Upsell premium add-ons (streaming, security)
+            - Loyalty rewards for tenure milestone
+            - Survey for feedback to prevent future drift
+            """,
+            icon="👍"
+        )
 
 st.markdown("—")
 st.caption("Model trained on 7,043 customers | Precision-optimized for real-world retention campaigns | © Kehinde Balogun 2025")
