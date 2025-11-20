@@ -5,7 +5,7 @@ import numpy as np
 
 # ========================== Page Config ==========================
 st.set_page_config(
-    page_title="Capstone Project - MTN Nigeria Churn Predictor",
+    page_title="MTN Nigeria Churn Predictor",
     page_icon="🇳🇬",
     layout="centered",
     initial_sidebar_state="expanded"
@@ -23,7 +23,7 @@ model, THRESHOLD, feature_names = load_artifacts()
 
 # ========================== Sidebar ==========================
 with st.sidebar:
-    st.image("https://commons.wikimedia.org/wiki/File:MTN_Logo.svg", width=200)
+    st.image("https://upload.wikimedia.org/wikipedia/commons/a/af/MTN_Logo.svg", width=200)
     st.markdown("### **MTN Nigeria Churn Prediction**")
     st.markdown("**Model**: Calibrated Logistic Regression") 
     st.markdown("**AUC**: 0.839 | **Precision**: 69.5% | **Recall**: 70.1%")
@@ -31,7 +31,7 @@ with st.sidebar:
     st.markdown("— Built by **Kehinde Balogun** | Nov 2025")
 
 # ========================== Main App ==========================
-st.title("🇳🇬 MTN Nigeria Customer Churn Prediction")
+st.title("Capstone Project - MTN Nigeria Customer Churn Prediction")
 st.markdown("### Know in seconds if a customer is about to leave — and save them.")
 
 st.info("👈 Use the form below or the sidebar sliders to test any customer profile")
