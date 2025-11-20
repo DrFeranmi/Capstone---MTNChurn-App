@@ -52,20 +52,20 @@ with c1:
     senior_citizen = st.selectbox("Senior Citizen?", ["No", "Yes"])
 
 with c2:
-    contract = st.selectbox("Contract Type", ["Month-to-month", "One year", "Two year"])
-    payment_method = st.selectbox("Payment Method", 
-        ["Electronic check", "Mailed check", "Bank transfer (automatic)", "Credit card (automatic)"])
+    contract = st.selectbox("Contract Type", ["Month-to-month", "One year", "Two year"], index=1)  # One year (low-risk)
+    ayment_method = st.selectbox("Payment Method", 
+    ["Electronic check", "Mailed check", "Bank transfer (automatic)", "Credit card (automatic)"], index=2)  # Bank transfer (lowest churn)
     internet_service = st.selectbox("Internet Service", ["DSL", "Fiber optic", "No"])
     paperless_billing = st.selectbox("Paperless Billing?", ["Yes", "No"])
 
 st.markdown("#### Add-on Services")
 c3, c4, c5 = st.columns(3)
 with c3:
-    online_security = st.selectbox("Online Security", ["No", "Yes", "No internet service"])
-    online_backup = st.selectbox("Online Backup", ["No", "Yes", "No internet service"])
+    online_security = st.selectbox("Online Security", ["No", "Yes", "No internet service"], index=1)  # Yes
+    online_backup = st.selectbox("Online Backup", ["No", "Yes", "No internet service"], index=1)  # Yes
 with c4:
-    device_protection = st.selectbox("Device Protection", ["No", "Yes", "No internet service"])
-    tech_support = st.selectbox("Tech Support", ["No", "Yes", "No internet service"])
+    device_protection = st.selectbox("Device Protection", ["No", "Yes", "No internet service"], index=1)  # Yes
+    tech_support = st.selectbox("Tech Support", ["No", "Yes", "No internet service"], index=1)  # Yes (loyalty booster)
 with c5:
     streaming_tv = st.selectbox("Streaming TV", ["No", "Yes", "No internet service"])
     streaming_movies = st.selectbox("Streaming Movies", ["No", "Yes", "No internet service"])
