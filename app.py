@@ -83,13 +83,14 @@ if st.button("Check Churn Risk", type="primary", use_container_width=True):
     # [Keep your existing input_dict building code here — unchanged]
     input_dict = {col: 0 for col in feature_names}
     raw_tenure = tenure
-    raw_monthly = monthly_charges
-    raw_total = total_charges if total_charges > 0 else raw_monthly * max(raw_tenure, 1)
-    # Scale first
-    scaled = scaler.transform([[raw_tenure, raw_monthly, raw_total]])[0]
+    # Convert Naira to USD (approx rate: ₦1650 ≈ $1 as of 2025)
+    NGN_TO_USD = 1650
+    raw_monthly = monthly_charges / NGN_TO_USD
+    raw_total = total_charges / NGN_TO_USD if total_charges > 0 else raw_monthly * raw_tenure
 
-    # Clip to the 1%/99% percentile range used during training (~ -2.33 to +2.33 std devs)
-    scaled = np.clip(scaled, -2.33, 2.33)
+    # Now scale using USD values
+    scaled = scaler.transform([[raw_tenure, raw_monthly, raw_total]])[0]
+    scaled = np.clip(scaled, -3, 3)  # safe clipping
 
     # Now assign the clipped values
     input_dict['tenure'] = scaled[0]
