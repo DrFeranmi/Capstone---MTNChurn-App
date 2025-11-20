@@ -33,28 +33,25 @@ with st.sidebar:
     st.markdown("—")
     st.markdown("Built by **Kehinde Balogun** • Nov 2025")
 
-    # Debug toggle (only you see this)
-    debug = st.checkbox("🔧 Show Debug Info (Dev Mode)", value=False)
 
 # ========================== Main App ==========================
 st.title("Capstone Project - MTN Nigeria Customer Churn Prediction")
 st.markdown("### Know in seconds if a customer is about to leave — and save them.")
-
-st.info("👈 Use the form below or the sidebar sliders to test any customer profile")
 
 # ========================== Input Form ==========================
 c1, c2 = st.columns(2)
 with c1:
     tenure = st.slider("Tenure (months)", 0, 72, 12)
     monthly_charges = st.number_input("Monthly Charges (₦)", 0, 12000, 5000, step=100)
-    total_charges = st.number_input("Total Charges (₦)", 0, 100000, 18000, step=500)
+    total_charges = st.number_input("Total Charges (₦)", 0, 900000, 18000, step=500)
     gender = st.selectbox("Gender", ["Male", "Female"])
     senior_citizen = st.selectbox("Senior Citizen?", ["No", "Yes"])
 
 with c2:
     contract = st.selectbox("Contract Type", ["Month-to-month", "One year", "Two year"], index=1)  # One year (low-risk)
-    ayment_method = st.selectbox("Payment Method", 
-    ["Electronic check", "Mailed check", "Bank transfer (automatic)", "Credit card (automatic)"], index=2)  # Bank transfer (lowest churn)
+    payment_method = st.selectbox("Payment Method", 
+    ["Electronic check", "Mailed check", "Bank transfer (automatic)", "Credit card (automatic)"], 
+    index=2)   # defaults to low-risk Bank transfer
     internet_service = st.selectbox("Internet Service", ["DSL", "Fiber optic", "No"])
     paperless_billing = st.selectbox("Paperless Billing?", ["Yes", "No"])
 
