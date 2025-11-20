@@ -42,8 +42,8 @@ st.markdown("### Know in seconds if a customer is about to leave — and save th
 c1, c2 = st.columns(2)
 with c1:
     tenure = st.slider("Tenure (months)", 0, 72, 12)
-    monthly_charges = st.number_input("Monthly Charges (₦)", 0, 12000, 5000, step=100)
-    total_charges = st.number_input("Total Charges (₦)", 0, 900000, 50000, step=500)
+    monthly_charges = st.number_input("Monthly Charges (₦)", 2000, 200000, 5000, step=1000)
+    total_charges = st.number_input("Total Charges (₦)", 0, 5000000, 850000, step=10000)
     gender = st.selectbox("Gender", ["Male", "Female"])
     senior_citizen = st.selectbox("Senior Citizen?", ["No", "Yes"])
 
@@ -83,14 +83,14 @@ if st.button("Check Churn Risk", type="primary", use_container_width=True):
     # [Keep your existing input_dict building code here — unchanged]
     input_dict = {col: 0 for col in feature_names}
     raw_tenure = tenure
-    # Convert Naira to USD (approx rate: ₦1650 ≈ $1 as of 2025)
-    NGN_TO_USD = 1650
+    # Convert Naira to USD (approx rate: ₦1630 ≈ $1 as of 2025)
+    NGN_TO_USD = 1630
     raw_monthly = monthly_charges / NGN_TO_USD
     raw_total = total_charges / NGN_TO_USD if total_charges > 0 else raw_monthly * raw_tenure
 
     # Now scale using USD values
     scaled = scaler.transform([[raw_tenure, raw_monthly, raw_total]])[0]
-    scaled = np.clip(scaled, -3, 3)  # safe clipping
+    scaled = np.clip(scaled, -3.0, 3.0)  # safe clipping
 
     # Now assign the clipped values
     input_dict['tenure'] = scaled[0]
