@@ -5,7 +5,7 @@ import numpy as np
 
 # ========================== Page Config ==========================
 st.set_page_config(
-    page_title="MTN Nigeria Churn Predictor",
+    page_title="Capstone Project - MTN Nigeria Churn Predictor",
     page_icon="🇳🇬",
     layout="centered",
     initial_sidebar_state="expanded"
@@ -23,7 +23,7 @@ model, THRESHOLD, feature_names = load_artifacts()
 
 # ========================== Sidebar ==========================
 with st.sidebar:
-    st.image("https://upload.wikimedia.org/wikipedia/commons/thumb/8/83/MTN_Group_Logo.svg/1280px-MTN_Group_Logo.svg.png", width=200)
+    st.image("https://commons.wikimedia.org/wiki/File:MTN_Logo.svg", width=200)
     st.markdown("### **MTN Nigeria Churn Prediction**")
     st.markdown("**Model**: Calibrated Logistic Regression") 
     st.markdown("**AUC**: 0.839 | **Precision**: 69.5% | **Recall**: 70.1%")
@@ -68,40 +68,58 @@ with col4:
 with col5:
     dependents = st.selectbox("Has Dependents?", ["No", "Yes"])
     senior_citizen = st.selectbox("Senior Citizen?", ["No", "Yes"])
+    gender = st.selectbox("Gender", ["Male", "Female"])
 
 # ========================== Prediction ==========================
 if st.button("🔮 Predict Churn Risk", type="primary", use_container_width=True):
-    # Build input dictionary
     input_dict = {col: 0 for col in feature_names}
-    
-    # Fill known values
+
+    # Numeric
     input_dict['tenure'] = tenure
     input_dict['MonthlyCharges'] = monthly_charges
     input_dict['TotalCharges'] = total_charges
+    input_dict['SeniorCitizen'] = 1 if senior_citizen == "Yes" else 0
+
+    # Main categoricals
     input_dict[f'Contract_{contract}'] = 1
     input_dict[f'PaymentMethod_{payment_method}'] = 1
     input_dict[f'InternetService_{internet_service}'] = 1
-    input_dict[f'OnlineSecurity_{online_security}'] = 1
-    input_dict[f'OnlineBackup_{online_backup}'] = 1
-    input_dict[f'TechSupport_{tech_support}'] = 1
-    input_dict[f'StreamingTV_{streaming_tv}'] = 1
-    input_dict['PaperlessBilling_' + paperless_billing] = 1
-    input_dict[f'DeviceProtection_{device_protection}'] = 1
-    input_dict[f'MultipleLines_{multiple_lines}'] = 1
-    input_dict['PhoneService_' + phone_service] = 1
-    input_dict['Partner_' + partner] = 1
-    input_dict['Dependents_' + dependents] = 1
-    input_dict['SeniorCitizen'] = 1 if senior_citizen == "Yes" else 0
+    input_dict[f'gender_{gender}'] = 1  # NEW: Gender one-hot
 
-    # Convert to DataFrame
-    input_df = pd.DataFrame([input_dict])[feature_names]
+    # All Yes/No + special cases (fixed for phone/internet)
+    for feat, val in [
+        ('OnlineSecurity', online_security),
+        ('OnlineBackup', online_backup),
+        ('DeviceProtection', device_protection),
+        ('TechSupport', tech_support),
+        ('StreamingTV', streaming_tv),
+        ('PaperlessBilling', paperless_billing),
+        ('PhoneService', phone_service),
+        ('MultipleLines', multiple_lines),
+        ('Partner', partner),
+        ('Dependents', dependents),
+    ]:
+        if val == "No internet service":
+            input_dict[f'{feat}_No internet service'] = 1
+        elif val == "No phone service":
+            input_dict[f'{MultipleLines}_No phone service'] = 1  # FIXED: Specific to MultipleLines
+        else:
+            input_dict[f'{feat}_{val}'] = 1
+
+    # Final DataFrame (enforce order, fill misses)
+    input_df = pd.DataFrame([input_dict])
+    input_df = input_df.reindex(columns=feature_names, fill_value=0)
+
+    # DEBUG: Peek at input (remove in prod)
+    with st.expander("Debug: Raw Input Vector (first 10 cols)"):
+        st.write(input_df.iloc[0].head(10))
 
     # Predict
     prob = model.predict_proba(input_df)[0][1]
     prediction = "HIGH RISK – WILL CHURN" if prob >= THRESHOLD else "SAFE – WILL STAY"
     color = "red" if prob >= THRESHOLD else "green"
 
-    # ========================== Results Display ==========================
+    # Results (your existing display code here...)
     st.markdown("<br>", unsafe_allow_html=True)
     st.markdown(f"<h1 style='text-align: center; color: {color}; font-size: 52px; font-weight: bold;'>{prob:.1%}</h1>", unsafe_allow_html=True)
     st.markdown(f"<h3 style='text-align: center;'>{prediction}</h3>", unsafe_allow_html=True)
