@@ -18,7 +18,7 @@ def load_artifacts():
     model = joblib.load("artifacts/best_churn_model_calibrated.pkl")
     threshold = joblib.load("artifacts/optimal_threshold.pkl")
     features = joblib.load("artifacts/feature_names.pkl")
-    scaler = joblib.load("artifacts/scaler.pkl")  # ← This was the missing piece!
+    scaler = joblib.load("artifacts/scaler_verified.pkl")  # ← This was the missing piece!
     return model, threshold, features, scaler
 
 model, THRESHOLD, feature_names, scaler = load_artifacts()
@@ -43,15 +43,15 @@ c1, c2 = st.columns(2)
 with c1:
     tenure = st.slider("Tenure (months)", 0, 72, 12)
     monthly_charges = st.number_input("Monthly Charges (₦)", 0, 12000, 5000, step=100)
-    total_charges = st.number_input("Total Charges (₦)", 0, 900000, 18000, step=500)
+    total_charges = st.number_input("Total Charges (₦)", 0, 900000, 50000, step=500)
     gender = st.selectbox("Gender", ["Male", "Female"])
     senior_citizen = st.selectbox("Senior Citizen?", ["No", "Yes"])
 
 with c2:
-    contract = st.selectbox("Contract Type", ["Month-to-month", "One year", "Two year"], index=1)  # One year (low-risk)
+    contract = st.selectbox("Contract Type", ["Month-to-month", "One year", "Two year"], index=1)  # One year
     payment_method = st.selectbox("Payment Method", 
     ["Electronic check", "Mailed check", "Bank transfer (automatic)", "Credit card (automatic)"], 
-    index=2)   # defaults to low-risk Bank transfer
+    index=2)  # Bank transfer (lowest risk)
     internet_service = st.selectbox("Internet Service", ["DSL", "Fiber optic", "No"])
     paperless_billing = st.selectbox("Paperless Billing?", ["Yes", "No"])
 
@@ -62,7 +62,7 @@ with c3:
     online_backup = st.selectbox("Online Backup", ["No", "Yes", "No internet service"], index=1)  # Yes
 with c4:
     device_protection = st.selectbox("Device Protection", ["No", "Yes", "No internet service"], index=1)  # Yes
-    tech_support = st.selectbox("Tech Support", ["No", "Yes", "No internet service"], index=1)  # Yes (loyalty booster)
+    tech_support = st.selectbox("Tech Support", ["No", "Yes", "No internet service"], index=1)  # Yes
 with c5:
     streaming_tv = st.selectbox("Streaming TV", ["No", "Yes", "No internet service"])
     streaming_movies = st.selectbox("Streaming Movies", ["No", "Yes", "No internet service"])
@@ -122,7 +122,7 @@ if st.button("Check Churn Risk", type="primary", use_container_width=True):
     st.markdown("<br>", unsafe_allow_html=True)
 
     if will_churn:
-        st.error("**YES — This customer is likely to churn**")
+        st.error("**HIGH — This customer is likely to churn**")
         st.markdown("""
         ### Recommended Immediate Actions:
         - **Call within 24 hours** with personalized retention offer
@@ -131,7 +131,7 @@ if st.button("Check Churn Risk", type="primary", use_container_width=True):
         - Assign to **High-Value Retention Team**
         """)
     else:
-        st.success("**NO — This customer is safe**")
+        st.success("**LOW — This customer is safe**")
         st.markdown("""
         ### Recommended Actions:
         - Monitor monthly
