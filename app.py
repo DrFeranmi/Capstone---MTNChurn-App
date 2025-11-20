@@ -18,7 +18,7 @@ def load_artifacts():
     model = joblib.load("artifacts/best_churn_model_calibrated.pkl")
     threshold = joblib.load("artifacts/optimal_threshold.pkl")
     features = joblib.load("artifacts/feature_names.pkl")
-    scaler = joblib.load("artifacts/scaler_verified.pkl")  # ← This was the missing piece!
+    scaler = joblib.load("artifacts/scaler.pkl") 
     return model, threshold, features, scaler
 
 model, THRESHOLD, feature_names, scaler = load_artifacts()
@@ -85,7 +85,13 @@ if st.button("Check Churn Risk", type="primary", use_container_width=True):
     raw_tenure = tenure
     raw_monthly = monthly_charges
     raw_total = total_charges if total_charges > 0 else raw_monthly * max(raw_tenure, 1)
+    # Scale first
     scaled = scaler.transform([[raw_tenure, raw_monthly, raw_total]])[0]
+
+    # Clip to the 1%/99% percentile range used during training (~ -2.33 to +2.33 std devs)
+    scaled = np.clip(scaled, -2.33, 2.33)
+
+    # Now assign the clipped values
     input_dict['tenure'] = scaled[0]
     input_dict['MonthlyCharges'] = scaled[1]
     input_dict['TotalCharges'] = scaled[2]
