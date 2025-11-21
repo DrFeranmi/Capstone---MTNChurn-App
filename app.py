@@ -1,31 +1,32 @@
+# app.py — FINAL PRODUCTION VERSION — MTN Nigeria Churn Alert System
 import streamlit as st
 import joblib
 import pandas as pd
 import numpy as np
-import sys, traceback
+import plotly.express as px
+import plotly.graph_objects as go
 
 # ========================== Page Config ==========================
 st.set_page_config(
-    page_title="MTN Nigeria Churn Predictor",
-    page_icon="🇳🇬",
-    layout="centered",
-    initial_sidebar_state="expanded"
+    page_title="MTN Nigeria Churn Alert",
+    page_icon="NG",
+    layout="wide"
 )
 
-
 # ========================== Load Artifacts ==========================
-
 @st.cache_resource
 def load_artifacts():
     model = joblib.load("artifacts/best_churn_model_calibrated.pkl")
     threshold = joblib.load("artifacts/optimal_threshold.pkl")
     features = joblib.load("artifacts/feature_names.pkl")
-    scaler = joblib.load("artifacts/scaler.pkl") 
+    scaler = joblib.load("artifacts/scaler.pkl")
     return model, threshold, features, scaler
-
 
 model, THRESHOLD, feature_names, scaler = load_artifacts()
 
+# MTN Colours
+MTN_YELLOW = "#FFC107"
+MTN_BLACK = "#212121"
 
 # after load_artifacts() and model/scaler/features loaded
 import os
@@ -39,63 +40,48 @@ else:
     MEAN_TENURE = 24.0
     MEAN_MONTHLY = 50.0
 
-# ========================== Sidebar ==========================
-with st.sidebar:
-    st.image("https://upload.wikimedia.org/wikipedia/commons/a/af/MTN_Logo.svg", width=180)
-    st.markdown("### MTN Nigeria Churn Prediction")
-    st.markdown("**Model**: Calibrated Logistic Regression")
-    st.markdown("**AUC**: 0.839  •  **Precision @70% Recall**: 69.5%")
-    st.markdown(f"**Threshold**: {THRESHOLD:.3f}")
-    st.markdown("—")
-    st.markdown("Built by **Kehinde Balogun** • Nov 2025")
+# ========================== Header ==========================
+col1, col2 = st.columns([1, 5])
+with col1:
+    st.image("https://upload.wikimedia.org/wikipedia/commons/a/af/MTN_Logo.svg", width=100)
+with col2:
+    st.markdown("<h1 style='color:#FFC107; margin:0;'>Captsone - MTN Nigeria Churn Alert</h1>", unsafe_allow_html=True)
+    st.markdown("<p style='color:#666; font-size:18px;'>Predict churn in seconds — retain customers before they leave</p>", unsafe_allow_html=True)
 
+# Currency conversion
+NGN_TO_USD = 220
 
-# ========================== Main App ==========================
-st.title("Capstone Project - MTN Nigeria Customer Churn Prediction")
-st.markdown("### Know in seconds if a customer is about to leave — and save them.")
+# ========================== Compact Input Form ==========================
+with st.container():
+    c1, c2, c3 = st.columns([2, 2, 1])
 
-# ========================== Input Form ==========================
-# use statutory NGN->USD rate
-NGN_TO_USD = 220.0
+    with c1:
+        st.markdown("**Customer Profile**")
+        tenure = st.slider("Tenure (months)", 0, 72, 6)
+        monthly_charges = st.number_input("Monthly Charges (₦)", 1000, 500000, 25000, step=1000)
+        total_charges = st.number_input("Total Charges (₦)", 1000, 10000000, 180000, step=10000)
+        gender = st.selectbox("Gender", ["Male", "Female"])
+        senior_citizen = st.selectbox("Senior Citizen", ["Yes", "No"])
 
-c1, c2 = st.columns(2)
-with c1:
-    tenure = st.slider("Tenure (months)", 1, 72, 6)
-    # NOTE: For POC we accept USD values to match model training units
-    monthly_charges = st.number_input("Monthly Charges (₦)", 0.0, 500000.0, 25000.0, step=1000.0, format="%.2f")
-    total_charges = st.number_input("Total Charges (₦)", 0.0, 20000000.0, 180000.0, step=10000.0, format="%.2f")
-    gender = st.selectbox("Gender", ["Male", "Female"])
-    senior_citizen = st.selectbox("Senior Citizen?", ["No", "Yes"])
+    with c2:
+        st.markdown("**Services & Behaviour**")
+        contract = st.selectbox("Contract Type", ["Month-to-month", "One year", "Two year"], index=1)
+        internet_service = st.selectbox("Internet Service", ["DSL", "Fiber optic", "No"])
+        tech_support = st.selectbox("Tech Support", ["Yes", "No", "No internet service"])
+        payment_method = st.selectbox("Payment Method", ["Bank transfer (automatic)", "Credit card (automatic)", "Electronic check", "Mailed check"])
+        paperless_billing = st.selectbox("Paperless Billing", ["Yes", "No"])
 
-with c2:
-    contract = st.selectbox("Contract Type", ["Month-to-month", "One year", "Two year"], index=1) # One year
-    payment_method = st.selectbox("Payment Method",
-    ["Electronic check", "Mailed check", "Bank transfer (automatic)", "Credit card (automatic)"],
-    index=2)
-    internet_service = st.selectbox("Internet Service", ["DSL", "Fiber optic", "No"])
-    paperless_billing = st.selectbox("Paperless Billing?", ["Yes", "No"])
-
-st.markdown("#### Add-on Services")
-c3, c4, c5 = st.columns(3)
-with c3:
-    online_security = st.selectbox("Online Security", ["No", "Yes", "No internet service"], index=1)
-    online_backup = st.selectbox("Online Backup", ["No", "Yes", "No internet service"], index=1)
-with c4:
-    device_protection = st.selectbox("Device Protection", ["No", "Yes", "No internet service"], index=1)
-    tech_support = st.selectbox("Tech Support", ["No", "Yes", "No internet service"], index=1)
-with c5:
-    streaming_tv = st.selectbox("Streaming TV", ["No", "Yes", "No internet service"])
-    streaming_movies = st.selectbox("Streaming Movies", ["No", "Yes", "No internet service"])
-
-st.markdown("#### Other Details")
-c6, c7, c8 = st.columns(3)
-with c6:
-    phone_service = st.selectbox("Phone Service?", ["Yes", "No"])
-    multiple_lines = st.selectbox("Multiple Lines?", ["No", "Yes", "No phone service"])
-with c7:
-    partner = st.selectbox("Has Partner?", ["No", "Yes"])
-with c8:
-    dependents = st.selectbox("Has Dependents?", ["No", "Yes"])
+    with c3:
+        st.markdown("**Add-ons/Other Details**")
+        online_security = "Yes" if st.checkbox("Online Security", value=True) else "No"
+        streaming_tv = "No" if st.checkbox("Streaming TV", value=False) else "Yes"
+        streaming_movies = "No" if st.checkbox("Streaming Movies", value=False) else "Yes"
+        online_backup = "Yes" if st.checkbox("Online Backup", value=True) else "No"
+        device_protection = "Yes" if st.checkbox("Device Protection", value=True) else "No"
+        phone_service = "Yes" if st.checkbox("Phone Service?", value=True) else "No"
+        partner = "No" if st.checkbox("Has Partner?", value=False) else "Yes"
+        dependents = "No" if st.checkbox("Has Dependents?", value=False) else "Yes"
+        multiple_lines = "No" if st.checkbox("Multiple_lines?", value=False) else "Yes"
 
 # ========================== Prediction ==========================
 if st.button("Check Churn Risk", type="primary", use_container_width=True):
@@ -120,7 +106,6 @@ if st.button("Check Churn Risk", type="primary", use_container_width=True):
         "AvgMonthlySpend": avg_monthly,
         "Tenure_MonthlyCharge": tenure_c * monthly_c
     }
-
 
     # Derived numeric features
     avg_monthly = raw_total_usd / max(raw_tenure, 1)
@@ -159,7 +144,6 @@ if st.button("Check Churn Risk", type="primary", use_container_width=True):
     if "AvgMonthlySpend" not in numeric_cols:
         input_dict["AvgMonthlySpend"] = avg_monthly
     
-
     # Categorical and other features
    # 1) ContractStrength — use .get() with a fallback string
     contract_key = contract or "Month-to-month"   # ensures a str
@@ -200,106 +184,16 @@ if st.button("Check Churn Risk", type="primary", use_container_width=True):
             name = f'{feat}_No internet service'
             if name in fn_set: input_dict[name] = 1
 
-
     if multiple_lines == "Yes":
         if 'MultipleLines_Yes' in fn_set: input_dict['MultipleLines_Yes'] = 1
     elif multiple_lines == "No phone service":
         if 'MultipleLines_No phone service' in fn_set: input_dict['MultipleLines_No phone service'] = 1
 
-
     input_df = pd.DataFrame([input_dict]).reindex(columns=feature_names, fill_value=0)
 
-    # ========================== ADMIN DEBUG (robust) ==========================
-    with st.expander("ADMIN: Debug assembled model input (do not expose)"):
-        # show reindexed input
-        input_df = pd.DataFrame([input_dict]).reindex(columns=feature_names, fill_value=0)
-        st.write("Reindexed input_df shape:", input_df.shape)
-        st.write("Key derived features and values:")
-        st.write(input_df.loc[:, ["AvgMonthlySpend", "Tenure_MonthlyCharge", "ServicesCount", "ContractStrength", "AutoPay"]])
-        st.write("First 40 features (for quick scan):")
-        st.dataframe(input_df.iloc[:, :40])
-
-        # numeric/scaler debug
-        st.write("scaler.feature_names_in_:", getattr(scaler, "feature_names_in_", None))
-        st.write("n_features_in_:", getattr(scaler, "n_features_in_", None))
-        st.write("numeric cols used for scaler:", numeric_cols)
-        st.write("numeric row values (pre-scale):", numeric_row)
-        st.write("scaled_array:", scaled_array.tolist())
-
-        # ---------- Explainability ----------
-        import os, json, numpy as np
-
-        coef_path = os.path.join("artifacts", "feature_coefs.json")
-        intercept_path = os.path.join("artifacts", "feature_intercept.json")
-
-        contributions = None
-        intercept_val = None
-
-        # 1) Preferred: load pre-exported JSON coefficients (no heavy deps)
-        if os.path.exists(coef_path) and os.path.exists(intercept_path):
-            try:
-                with open(coef_path) as f:
-                    coef_map = json.load(f)
-                with open(intercept_path) as f:
-                    intercept_val = json.load(f).get("intercept", 0.0)
-                row = input_df.iloc[0]
-                contributions = {f: float(row.get(f, 0.0)) * float(coef_map.get(f, 0.0)) for f in feature_names}
-                top_pos = sorted(contributions.items(), key=lambda x: -x[1])[:6]
-                top_neg = sorted(contributions.items(), key=lambda x: x[1])[:6]
-                st.write("EXPLAIN (from JSON):")
-                st.write("Intercept:", intercept_val)
-                st.write("Top positive contributors (feature, contribution):", top_pos)
-                st.write("Top negative contributors (feature, contribution):", top_neg)
-                st.write("Logit (from contributions):", intercept_val + sum(contributions.values()))
-                st.write("Probability (from contributions):", 1/(1+np.exp(-(intercept_val + sum(contributions.values())))))
-            except Exception as e:
-                st.write("Could not compute contributions from JSON coefs:", str(e))
-
-        # 2) Fallback: try unpickling model and inspect (may fail if deps missing)
-        if contributions is None:
-            try:
-                import joblib
-                M = joblib.load(os.path.join("artifacts", "best_churn_model_calibrated.pkl"))
-                est = M
-                if hasattr(M, "base_estimator_"):
-                    est = M.base_estimator_
-                if hasattr(est, "named_steps"):
-                    est = list(est.named_steps.values())[-1]
-                if hasattr(est, "coef_"):
-                    coefs = est.coef_.ravel()
-                    intercept_val = float(est.intercept_.ravel()[0])
-                    coef_map = dict(zip(feature_names, coefs))
-                    row = input_df.iloc[0]
-                    contributions = {f: float(row.get(f, 0.0)) * float(coef_map.get(f, 0.0)) for f in feature_names}
-                    top_pos = sorted(contributions.items(), key=lambda x: -x[1])[:6]
-                    top_neg = sorted(contributions.items(), key=lambda x: x[1])[:6]
-                    st.write("EXPLAIN (from model object):")
-                    st.write("Intercept:", intercept_val)
-                    st.write("Top positive contributors (feature, contribution):", top_pos)
-                    st.write("Top negative contributors (feature, contribution):", top_neg)
-                    st.write("Logit (from contributions):", intercept_val + sum(contributions.values()))
-                    st.write("Probability (from contributions):", 1/(1+np.exp(-(intercept_val + sum(contributions.values())))))
-                else:
-                    st.write("Model loaded but no coef_ found on final estimator.")
-            except Exception as e:
-                st.write("Could not load full model for contributions (expected if imblearn missing):", str(e))
-
-        # 3) If model.predict_proba may not be available, compute fallback prob from JSON/model coefs if present
-        prob_from_contribs = None
-        if contributions is not None and intercept_val is not None:
-            logit = intercept_val + sum(contributions.values())
-            prob_from_contribs = 1.0 / (1.0 + np.exp(-logit))
-            st.write("Probability (fallback from contributions):", prob_from_contribs)
-
-    # END ADMIN expander
-    # ---------- end debug ----------
-    # Now compute final prob (safe)
-    # Compute probability (safe fallback to contributions if model fails)
-    try:
-        prob = float(model.predict_proba(input_df)[0][1])
-    except Exception:
-        prob = float(prob_from_contribs) if ('prob_from_contribs' in locals() and prob_from_contribs is not None) else float("nan")
-
+    # Predict
+    prob = float(model.predict_proba(input_df)[0][1])
+    
     # Determine 3-level risk: high, mid, low
     # Compute customer value (USD) using converted total
     customer_total_usd = raw_total_usd
@@ -322,78 +216,95 @@ if st.button("Check Churn Risk", type="primary", use_container_width=True):
     else:
         band = "low"
 
-    # ========================== RESULT: YES , NO, or MAYBE ==========================
-    st.markdown("<br>", unsafe_allow_html=True)
-
-    actions = []
-    if band == "high":
-        if value_tier == "High-Value":
+    # ========================== Results + Charts ==========================
+    col_a, col_b = st.columns([1, 2], gap="large")
+    with col_a:
+        st.markdown("<br><br>", unsafe_allow_html=True)
+        actions = []
+        if band == "high":
+            if value_tier == "High-Value":
+                actions = [
+                    "Call within 6 hours by Senior Retention Team",
+                    "Offer bespoke financial incentive (bill credit or multi-month discount)",
+                    "Propose immediate contract extension (1-2 years) with bundled add-ons",
+                    "Assign a dedicated account manager and follow-up within 48 hours"
+                ]
+            elif value_tier == "Mid-Value":
+                actions = [
+                    "Call within 24 hours with targeted offer",
+                    "Offer 20-40% bill discount or free premium add-on for 3 months",
+                    "Send SMS + email reminder about loyalty benefits"
+                ]
+            else: # Low-Value
+                actions = [
+                    "Automated outreach: SMS + email with a tailored discount code",
+                    "Offer 1-month free add-on to improve stickiness",
+                    "Monitor for next billing cycle"
+                ]
+        elif band == "mid":
+            if value_tier == "High-Value":
+                actions = [
+                    "Proactive outreach by operations team within 48 hours",
+                    "Offer non-financial perks (priority support, free add-on) to reduce churn risk",
+                    "Monitor usage patterns for upsell opportunities"
+                ]
+            elif value_tier == "Mid-Value":
+                actions = [
+                    "Send targeted promotional offer via SMS/email",
+                    "Offer a smaller discount or bundle trial",
+                    "Enroll in loyalty nudges (reminders at key tenure milestones)"
+                ]
+            else:
+                actions = [
+                    "Monitor and send value communication (tips, package benefits)",
+                    "Offer small non-financial incentives (e.g., free month trial)"
+                ]
+        elif band == "low":
             actions = [
-                "Call within 6 hours by Senior Retention Team",
-                "Offer bespoke financial incentive (bill credit or multi-month discount)",
-                "Propose immediate contract extension (1-2 years) with bundled add-ons",
-                "Assign a dedicated account manager and follow-up within 48 hours"
-            ]
-        elif value_tier == "Mid-Value":
-            actions = [
-                "Call within 24 hours with targeted offer",
-                "Offer 20-40% bill discount or free premium add-on for 3 months",
-                "Send SMS + email reminder about loyalty benefits"
-            ]
-        else: # Low-Value
-            actions = [
-                "Automated outreach: SMS + email with a tailored discount code",
-                "Offer 1-month free add-on to improve stickiness",
-                "Monitor for next billing cycle"
-            ]
-    elif band == "mid":
-        if value_tier == "High-Value":
-            actions = [
-                "Proactive outreach by operations team within 48 hours",
-                "Offer non-financial perks (priority support, free add-on) to reduce churn risk",
-                "Monitor usage patterns for upsell opportunities"
-            ]
-        elif value_tier == "Mid-Value":
-            actions = [
-                "Send targeted promotional offer via SMS/email",
-                "Offer a smaller discount or bundle trial",
-                "Enroll in loyalty nudges (reminders at key tenure milestones)"
+                "Low priority: continue standard communications",
+                "Offer loyalty milestones and occasional rewards",
+                "Monitor for feature uptake and upsell opportunities"
             ]
         else:
-            actions = [
-                "Monitor and send value communication (tips, package benefits)",
-                "Offer small non-financial incentives (e.g., free month trial)"
-            ]
-    elif band == "low":
-        actions = [
-            "Low priority: continue standard communications",
-            "Offer loyalty milestones and occasional rewards",
-            "Monitor for feature uptake and upsell opportunities"
-        ]
-    else:
-        actions = ["Unable to compute risk band (check artifacts)"]
+            actions = ["Unable to compute risk band (check artifacts)"]
+        # Render result and actions
+        st.markdown("<br>", unsafe_allow_html=True)
+        if band == "high":
+            st.error("**HIGH — This customer is likely to churn**")
+        elif band == "mid":
+            st.warning("**MEDIUM — This customer has elevated churn risk**")
+        elif band == "low":
+            st.success("**LOW — This customer is low risk**")
+        else:
+            st.info("Risk unknown")
 
-    # Render result and actions
-    st.markdown("<br>", unsafe_allow_html=True)
-    if band == "high":
-        st.error("**HIGH — This customer is likely to churn**")
-    elif band == "mid":
-        st.warning("**MEDIUM — This customer has elevated churn risk**")
-    elif band == "low":
-        st.success("**LOW — This customer is low risk**")
-    else:
-        st.info("Risk unknown")
+        st.markdown("### Recommended actions:")
+        for a in actions:
+            st.markdown(f"- {a}")
+    with col_b:
+        # Chart: Risk Gauge
+        fig_gauge = go.Figure(go.Indicator(
+            mode="gauge+number",
+            value=prob * 100,
+            number={'suffix': "%"},
+            gauge={
+                'axis': {'range': [0, 100]},
+                'bar': {'color': 'teal'},
+                'steps': [
+                    {'range': [0, 40], 'color': 'lightgreen'},
+                    {'range': [40, 70], 'color': 'orange'},
+                    {'range': [70, 100], 'color': 'red'}
+                ],
+                'threshold': {'line': {'color': "red", 'width': 4}, 'value': THRESHOLD * 100}
+            },
+            title={'text': "Churn Risk Level"}
+        ))
+        fig_gauge.update_layout(height=250, margin=dict(t=50, b=0, l=0, r=0))
+        st.plotly_chart(fig_gauge, use_container_width=True)
 
-    st.markdown("### Recommended actions:")
-    for a in actions:
-        st.markdown(f"- {a}")
+        # Optional: show probability only in expander (for analysts)
+        with st.expander("View detailed probability (for analysts)"):
+            st.write(f"Raw churn probability: **{prob:.1%}**")
+            st.write(f"Decision threshold: **{THRESHOLD:.3f}**/**{(THRESHOLD*1.6):.3f}**")
 
-
-    # Optional: show probability only in expander (for analysts)
-    with st.expander("View detailed probability (for analysts)"):
-        st.write(f"Raw churn probability: **{prob:.1%}**")
-        st.write(f"Decision threshold: **{THRESHOLD:.3f}**/**{(THRESHOLD*1.6):.3f}**")
-
-st.caption("Trained on 7,043 customers • Precision-optimized for real retention campaigns • © Kehinde Balogun 2025")
-
-
+st.caption("© Kehinde Balogun 2025 — Capstone Project | Precision-optimized for real retention campaigns")
