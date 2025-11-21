@@ -45,7 +45,7 @@ col1, col2 = st.columns([1, 5])
 with col1:
     st.image("https://upload.wikimedia.org/wikipedia/commons/a/af/MTN_Logo.svg", width=100)
 with col2:
-    st.markdown("<h1 style='color:#FFC107; margin:0;'>Captsone - MTN Nigeria Churn Alert</h1>", unsafe_allow_html=True)
+    st.markdown("<h1 style='color:#FFC107; margin:0;'>MTN Nigeria Churn Alert</h1>", unsafe_allow_html=True)
     st.markdown("<p style='color:#666; font-size:18px;'>Predict churn in seconds — retain customers before they leave</p>", unsafe_allow_html=True)
 
 # Currency conversion
@@ -306,5 +306,6 @@ if st.button("Check Churn Risk", type="primary", use_container_width=True):
         with st.expander("View detailed probability (for analysts)"):
             st.write(f"Raw churn probability: **{prob:.1%}**")
             st.write(f"Decision threshold: **{THRESHOLD:.3f}**/**{(THRESHOLD*1.6):.3f}**")
+
 
 st.caption("© Kehinde Balogun 2025 — Capstone Project | Precision-optimized for real retention campaigns")
