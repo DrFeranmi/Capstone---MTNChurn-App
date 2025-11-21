@@ -57,7 +57,7 @@ with st.container():
 
     with c1:
         st.markdown("**Customer Profile**")
-        tenure = st.slider("Tenure (months)", 0, 72, 6)
+        tenure = st.slider("Tenure (months)", 1, 72, 6)
         monthly_charges = st.number_input("Monthly Charges (₦)", 1000, 500000, 25000, step=1000)
         total_charges = st.number_input("Total Charges (₦)", 1000, 10000000, 180000, step=10000)
         gender = st.selectbox("Gender", ["Male", "Female"])
