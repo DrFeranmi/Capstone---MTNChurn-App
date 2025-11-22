@@ -291,9 +291,9 @@ if st.button("Check Churn Risk", type="primary", use_container_width=True):
                 'axis': {'range': [0, 100]},
                 'bar': {'color': 'teal'},
                 'steps': [
-                    {'range': [0, 40], 'color': 'lightgreen'},
-                    {'range': [40, 70], 'color': 'orange'},
-                    {'range': [70, 100], 'color': 'red'}
+                    {'range': [0, 36], 'color': 'lightgreen'},
+                    {'range': [36, 58], 'color': 'orange'},
+                    {'range': [58, 100], 'color': 'red'}
                 ],
                 'threshold': {'line': {'color': "red", 'width': 4}, 'value': THRESHOLD * 100}
             },
@@ -309,3 +309,4 @@ if st.button("Check Churn Risk", type="primary", use_container_width=True):
 
 
 st.caption("© Kehinde Balogun 2025 — Capstone Project | Precision-optimized for real retention campaigns")
+
